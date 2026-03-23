@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Đăng nhập | Mã QR xác thực</title>
+    <!-- Google Fonts & Font Awesome (cho icon mượt mà) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- thư viện QRCode.js để tạo QR động (tùy chọn, dùng static demo) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #eef2f7 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* Container chính: layout 2 cột (trái QR, phải form) */
+        .login-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        /* Phần bên trái: QR & thông tin */
+        .qr-section {
+            flex: 1;
+            background: linear-gradient(145deg, #ffffff 0%, #fefefe 100%);
+            padding: 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* Khung QR */
+        .qr-box {
+            background: white;
+            padding: 1.2rem;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            margin-bottom: 1.8rem;
+            transition: transform 0.2s;
+        }
+        .qr-box:hover {
+            transform: scale(1.01);
+        }
+        #qrcode {
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* fallback nếu QR chưa tạo, style cho canvas/img */
+        #qrcode img, #qrcode canvas {
+            width: 200px !important;
+            height: 200px !important;
+            border-radius: 16px;
+        }
+        .qr-caption {
+            font-size: 0.9rem;
+            color: #2c3e66;
+            background: #f0f4fe;
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        .qr-section h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #111827;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .qr-section p {
+            color: #4b5563;
+            max-width: 260px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .secure-badge {
+            margin-top: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: #2c6e5c;
+            background: #e6f7f0;
+            padding: 0.4rem 0.9rem;
+            border-radius: 60px;
+        }
+        .secure-badge i {
+            font-size: 0.8rem;
+        }
+
+        /* Phần bên phải: form login */
+        .form-section {
+            flex: 1;
+            padding: 2.8rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: #ffffff;
+        }
+
+        .form-header {
+            margin-bottom: 2rem;
+        }
+        .form-header h2 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+        }
+        .form-header p {
+            color: #5b6b8c;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.4rem;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 0.4rem;
+        }
+        .input-field {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 0.6rem 1rem;
+            transition: all 0.2s;
+        }
+        .input-field i {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            width: 1.8rem;
+        }
+        .input-field input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-size: 0.95rem;
+            padding: 0.5rem 0;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            color: #0f172a;
+        }
+        .input-field input::placeholder {
+            color: #cbd5e1;
+            font-weight: 400;
+        }
+        .input-field:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+            background: white;
+        }
+
+        .options-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0 1.6rem;
+            font-size: 0.85rem;
+        }
+        .remember {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #334155;
+            cursor: pointer;
+        }
+        .remember input {
+            width: 1rem;
+            height: 1rem;
+            accent-color: #3b82f6;
+            cursor: pointer;
+        }
+        .forgot-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .forgot-link:hover {
+            color: #1e40af;
+            text-decoration: underline;
+        }
+
+        .login-btn {
+            width: 100%;
+            background: #0f172a;
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .login-btn:hover {
+            background: #1e293b;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -6px rgba(15,23,42,0.3);
+        }
+        .login-btn:active {
+            transform: translateY(1px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.8rem 0 1.2rem;
+            color: #94a3b8;
+            font-size: 0.75rem;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+        .divider span {
+            margin: 0 0.8rem;
+        }
+        .social-login {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .social-icon {
+            background: #f1f5f9;
+            border-radius: 3rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #334155;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .social-icon:hover {
+            background: #e2e8f0;
+            transform: scale(1.05);
+            color: #0f172a;
+        }
+        .signup-text {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        .signup-text a {
+            color: #3b82f6;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .signup-text a:hover {
+            text-decoration: underline;
+        }
+
+        /* demo thông báo (toast nhẹ) */
+        .toast-message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #0f172a;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .toast-message.show {
+            opacity: 1;
+        }
+
+        /* responsive: mobile thì xếp chồng (qr lên trên, form dưới) */
+        @media (max-width: 780px) {
+            .login-container {
+                flex-direction: column;
+                border-radius: 1.5rem;
+            }
+            .qr-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+                padding: 2rem 1.5rem;
+            }
+            .form-section {
+                padding: 2rem 1.5rem;
+            }
+            .qr-box {
+                padding: 1rem;
+            }
+            #qrcode {
+                width: 170px;
+                height: 170px;
+            }
+            #qrcode img, #qrcode canvas {
+                width: 170px !important;
+                height: 170px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-header h2 {
+                font-size: 1.6rem;
+            }
+            .qr-section h3 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Bên trái: Mã QR & nội dung hướng dẫn -->
+        <div class="qr-section">
+            <div class="qr-box">
+                <div id="qrcode"></div>
+            </div>
+            <div class="qr-caption">
+                <i class="fas fa-mobile-alt" style="margin-right: 6px;"></i> Quét bằng ứng dụng xác thực
+            </div>
+            <h3>Xác thực hai lớp</h3>
+            <p>Quét mã QR bằng Google Authenticator, Microsoft Authenticator hoặc ứng dụng tương thích để tăng bảo mật.</p>
+            <div class="secure-badge">
+                <i class="fas fa-shield-alt"></i> <span>Bảo mật nâng cao • Mã OTP động</span>
+            </div>
+        </div>
+
+        <!-- Bên phải: Form đăng nhập -->
+        <div class="form-section">
+            <div class="form-header">
+                <h2>Chào mừng trở lại</h2>
+                <p>Đăng nhập để tiếp tục trải nghiệm dịch vụ</p>
+            </div>
+
+            <form id="loginForm" action="#" method="post">
+                <div class="input-group">
+                    <label>Email hoặc tên đăng nhập</label>
+                    <div class="input-field">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" placeholder="example@company.com" value="demo@example.com" autocomplete="email">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Mật khẩu</label>
+                    <div class="input-field">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" placeholder="••••••••" value="123456" autocomplete="current-password">
+                    </div>
+                </div>
+
+                <div class="options-row">
+                    <label class="remember">
+                        <input type="checkbox" id="rememberCheck"> Ghi nhớ đăng nhập
+                    </label>
+                    <a href="#" class="forgot-link" id="forgotPwdLink">Quên mật khẩu?</a>
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <i class="fas fa-arrow-right-to-bracket"></i> Đăng nhập
+                </button>
+            </form>
+
+            <div class="divider">
+                <span>HOẶC ĐĂNG NHẬP VỚI</span>
+            </div>
+            <div class="social-login">
+                <a href="#" class="social-icon" id="googleSocial"><i class="fab fa-google"></i></a>
+                <a href="#" class="social-icon" id="facebookSocial"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="social-icon" id="appleSocial"><i class="fab fa-apple"></i></a>
+            </div>
+            <div class="signup-text">
+                Chưa có tài khoản? <a href="#" id="signupLink">Đăng ký ngay</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast thông báo tương tác demo -->
+    <div id="toastMsg" class="toast-message">✨ Thông báo</div>
+
+    <script>
+        // --- TẠO QR CODE ĐỘNG (dùng thư viện qrcodejs2) ---
+        // Nội dung QR: có thể là URI cho OTP hoặc đơn giản là thông tin xác thực demo.
+        // Để demo sinh động, tạo mã QR chứa đường dẫn đăng nhập nhanh hoặc secret key mẫu.
+        // Thực tế có thể dùng otpauth://... nhưng ở đây tạo QR chứa text "https://example.com/auth?user=demo" và thông báo bảo mật.
+        const qrData = "otpauth://totp/SampleApp:demo@example.com?secret=JBSWY3DPEHPK3PXP&issuer=SecureLogin&digits=6&period=30";
+        // fallback nếu qr code không load tốt, nhưng dùng qrcodejs hỗ trợ tốt.
+        // Vì dùng thư viện qrcode.min.js, ta cần đợi DOM load
+        let qrcodeInstance = null;
+        function initQR() {
+            const qrcodeDiv = document.getElementById("qrcode");
+            if (qrcodeDiv) {
+                // Xóa nội dung cũ nếu có
+                qrcodeDiv.innerHTML = "";
+                try {
+                    qrcodeInstance = new QRCode(qrcodeDiv, {
+                        text: qrData,
+                        width: 200,
+                        height: 200,
+                        colorDark: "#0f172a",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                } catch(e) {
+                    console.warn("QR init fallback", e);
+                    qrcodeDiv.innerHTML = `<div style="width:200px;height:200px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;border-radius:16px;"><i class="fas fa-qrcode" style="font-size: 4rem; color:#2c3e66;"></i></div>`;
+                }
+            }
+        }
+
+        // hiển thị toast tạm thời
+        function showToast(message, isError = false) {
+            const toast = document.getElementById("toastMsg");
+            toast.textContent = message;
+            toast.style.backgroundColor = isError ? "#b91c1c" : "#0f172a";
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+                toast.style.backgroundColor = "#0f172a";
+            }, 2800);
+        }
+
+        // xử lý submit form login
+        const loginForm = document.getElementById("loginForm");
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+        const rememberChk = document.getElementById("rememberCheck");
+
+        loginForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            
+            // demo validation cơ bản
+            if (email === "") {
+                showToast("Vui lòng nhập email hoặc tên đăng nhập", true);
+                return;
+            }
+            if (password === "") {
+                showToast("Vui lòng nhập mật khẩu", true);
+                return;
+            }
+            // kiểm tra đơn giản demo (giả lập thành công với bất kỳ email/pass không rỗng)
+            // thêm thông báo thành công + gợi ý về QR 2FA
+            if (rememberChk.checked) {
+                localStorage.setItem("demo_remember", email);
+                showToast(`🔐 Đã lưu thông tin cho ${email} (ghi nhớ)`);
+            } else {
+                localStorage.removeItem("demo_remember");
+                showToast(`✅ Đăng nhập thành công! Chào mừng ${email}`, false);
+            }
+            // thông báo bổ sung (có thể simulate redirect)
+            setTimeout(() => {
+                showToast(`💡 Gợi ý: Quét mã QR để kích hoạt xác thực 2 lớp thực tế.`, false);
+            }, 1000);
+            // ở đây có thể redirect, nhưng demo giữ lại trang để thấy QR
+            console.log("Đăng nhập với:", email, password, "Remember:", rememberChk.checked);
+        });
+
+        // Xử lý các link giả lập (forgot, signup, social) chỉ hiển thị toast demo
+        document.getElementById("forgotPwdLink").addEventListener("click", function(e) {
+            e.preventDefault();
+            showToast("📧 Hướng dẫn khôi phục mật khẩu sẽ được gửi đến email của bạn.");
+        });
+        document.getElementById("signupLink").addEventListener("click", function(e) {
+            e.preventDefault();
+            showToast("📝 Trang đăng ký tài khoản mới (demo)");
+        });
+        // social demo
+        const socialBtns = ["googleSocial", "facebookSocial", "appleSocial"];
+        socialBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    let provider = id.replace("Social", "");
+                    if(provider === "googleSocial") provider = "Google";
+                    else if(provider === "facebookSocial") provider = "Facebook";
+                    else if(provider === "appleSocial") provider = "Apple";
+                    showToast(`🔑 Đăng nhập bằng ${provider} (tính năng đang phát triển)`);
+                });
+            }
+        });
+
+        // Tự động điền nếu có localStorage nhớ (ghi nhớ demo)
+        function loadRemembered() {
+            const remembered = localStorage.getItem("demo_remember");
+            if (remembered) {
+                emailInput.value = remembered;
+                rememberChk.checked = true;
+                showToast(`👋 Chào lại, ${remembered}!`, false);
+            }
+        }
+        
+        // Khởi tạo QR code khi load trang (đảm bảo kích thước responsive)
+        window.addEventListener("DOMContentLoaded", () => {
+            initQR();
+            loadRemembered();
+            // Thêm hiệu ứng focus cho form
+            const fields = document.querySelectorAll('.input-field');
+            fields.forEach(field => {
+                field.addEventListener('click', () => {
+                    const inp = field.querySelector('input');
+                    if(inp) inp.focus();
+                });
+            });
+            // tạo tooltip nhẹ cho QR (tùy chọn)
+            const qrBox = document.querySelector('.qr-box');
+            if(qrBox) {
+                qrBox.setAttribute('title', 'Mã OTP xác thực 2 lớp - Quét ngay');
+            }
+        });
+
+        // Nếu resize window cần đảm bảo QR không bị vỡ (thư viện tự giữ kích thước, nhưng có thể refresh nếu cần)
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                // Đối với qrcodejs, nếu thay đổi kích thước màn hình lớn, giữ nguyên nhưng để responsive.
+                // Xử lý lại nếu qr bị biến dạng? qrcodejs dùng canvas/img kích thước tuyệt đối. 
+                // Trong trường hợp mobile đã có media, không cần refresh lại qr vì nội dung không đổi.
+                // Tuy nhiên để tránh lỗi hiển thị cứng, ta kiểm tra lại nếu thiết bị xoay có thể gây méo, không đáng kể.
+                const qrDiv = document.getElementById("qrcode");
+                if(qrDiv && (window.innerWidth <= 780)) {
+                    // Nếu qr có canvas con, kích thước đã được css điều chỉnh %; không cần làm gì thêm.
+                }
+            }, 200);
+        });
+    </script>
+    <!-- Đảm bảo thư viện QRCode đã sẵn sàng -->
+</body>
+</html>
